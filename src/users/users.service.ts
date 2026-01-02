@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { User } from 'types/userTypes';
-import { randomUUID } from 'crypto';
 
 @Injectable()
 export class UsersService {
@@ -18,45 +18,35 @@ export class UsersService {
       role: 'user',
     },
   ];
-
-  // CREATE
-  create(user: Omit<User, 'id'>): User {
-    const newUser: User = {
-      id: randomUUID(),
-      ...user,
-    };
-
-    this.users.push(newUser);
-    return newUser;
-  }
-
-  // READ - all
   findAll(): User[] {
+    if (this.users.length === 0) {
+      throw new NotFoundException('No users found');
+    }
     return this.users;
   }
-
-  // READ - one
   findOne(id: string): User {
-    const user = this.users.find(u => u.id === id);
+    const user = this.users.find((user) => user.id === id);
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
     return user;
   }
-
-  // UPDATE
-  update(id: string, data: Partial<Omit<User, 'id'>>): User {
-    const user = this.findOne(id);
-
-    const updatedUser = { ...user, ...data };
-    this.users = this.users.map(u => (u.id === id ? updatedUser : u));
-
-    return updatedUser;
+  create(user: User): User {
+    const userId = (this.users.length + 1).toString();
+    const newUser = { ...user, id: userId };
+    this.users.push(newUser);
+    return newUser;
   }
-
-  // DELETE
-  remove(id: string): void {
-    const user = this.findOne(id);
-    this.users = this.users.filter(u => u.id !== user.id);
+  update(id: string, user: User): User {
+    const index = this.users.findIndex((user) => user.id === id);
+    if (index === -1) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    this.users[index] = { ...this.users[index], ...user };
+    return this.users[index];
+  }
+  delete(id: string): string {
+    this.users = this.users.filter((user) => user.id !== id);
+    return 'User deleted successfully';
   }
 }
